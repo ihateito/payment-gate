@@ -1,6 +1,7 @@
 package money
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -22,7 +23,7 @@ func TestMoney_CurrencyMismatch(t *testing.T) {
 	m2, _ := New(100, EUR)
 
 	_, err := m1.Add(m2)
-	if err != ErrCurrencyMismatch {
+	if !errors.Is(err, ErrCurrencyMismatch) {
 		t.Errorf("expected ErrCurrencyMismatch, got %v", err)
 	}
 }
