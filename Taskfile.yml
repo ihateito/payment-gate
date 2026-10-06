@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+  infra-up:
+    desc: Start local infrastructure containers (Postgres, Redis, Redpanda, Jaeger)
+    cmds:
+      - docker compose -f deployments/docker-compose.yml up -d
+
+  infra-down:
+    desc: Stop local infrastructure containers
+    cmds:
+      - docker compose -f deployments/docker-compose.yml down
+
+  test:
+    desc: Run unit tests with race detection
+    cmds:
+      - go test -v -race ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  build:
+    desc: Build all microservice binaries
+    cmds:
+      - go build -o bin/api-gateway.exe ./cmd/api-gateway
+      - go build -o bin/payment-core.exe ./cmd/payment-core
+      - go build -o bin/outbox-worker.exe ./cmd/outbox-worker
+      - go build -o bin/ledger.exe ./cmd/ledger
+
+  run-gateway:
+    desc: Run API Gateway
+    cmds:
+      - go run ./cmd/api-gateway
