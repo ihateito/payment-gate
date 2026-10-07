@@ -4,26 +4,47 @@
 
 ## 🚀 Быстрый старт
 
-### 1. Поднятие инфраструктуры
+### Вариант А: Всё в Docker (одной командой)
 
-Запуск зависимостей (PostgreSQL 16, Redis 7, Redpanda/Kafka, Redpanda Console, Jaeger, Prometheus):
+Запуск всей платформы (Postgres, Redis, API Gateway с UI, Outbox Worker) в изолированных контейнерах:
 
 ```bash
-docker compose -f deployments/docker-compose.yml up -d
+make docker-up
+```
+*(После запуска веб-панель сразу доступна на [http://localhost:8080](http://localhost:8080))*
+
+Для просмотра логов:
+```bash
+make docker-logs
 ```
 
-Сервисы будут доступны по адресам:
+---
+
+### Вариант Б: Локальная разработка на хосте (Go)
+
+1. Запуск только баз данных (PostgreSQL + Redis):
+```bash
+make infra-up
+```
+
+2. Запуск сервисов:
+```bash
+# В терминале 1: API Gateway (раздает API и UI)
+make run-gateway
+
+# В терминале 2: Transactional Outbox воркер
+make run-outbox
+```
+
+---
+
+### Опционально: Полная телеметрия и Kafka UI (Redpanda, Jaeger, Prometheus)
+```bash
+make docker-full
+```
 - **Redpanda Console (Kafka UI)**: [http://localhost:8081](http://localhost:8081)
 - **Jaeger UI (Tracing)**: [http://localhost:16686](http://localhost:16686)
 - **Prometheus**: [http://localhost:9090](http://localhost:9090)
-- **Postgres**: `localhost:5432` (`payment_user` / `payment_pass` / `payment_gateway`)
-- **Redis**: `localhost:6379`
-
-### 2. Запуск API Gateway
-
-```bash
-go run ./cmd/api-gateway
-```
 
 Проверка здоровья:
 ```bash

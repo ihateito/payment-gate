@@ -2,41 +2,36 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"os"
 	"time"
 
+	"payment-gate/internal/config"
+	"payment-gate/internal/worker"
 	"payment-gate/pkg/logger"
-	"payment-gate/pkg/outbox"
 	"payment-gate/pkg/shutdown"
 )
 
-// ConsolePublisher is a mock/development broker publisher.
-type ConsolePublisher struct{}
-
-func (c *ConsolePublisher) Publish(ctx context.Context, msg *outbox.Message) error {
-	fmt.Printf("[KAFKA PUBLISH] Topic: %s | Key: %s | Payload: %s\n", msg.Topic, msg.Key, string(msg.Payload))
-	return nil
-}
-
 func main() {
+	cfg := config.Load()
+
 	l := logger.New(logger.Config{
-		Level:  "DEBUG",
-		Format: "json",
+		Level:  cfg.LogLevel,
+		Format: cfg.LogFormat,
 	})
-	l.Info("starting outbox-worker microservice")
+	l.Info("starting outbox-worker microservice", "env", cfg.AppEnv)
 
 	coordinator := shutdown.NewCoordinator(10*time.Second, l)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	coordinator.Register("worker_cancel", func(ctx context.Context) error {
-		cancel()
-		return nil
-	})
+	app, err := worker.NewApp(ctx, cfg, l, coordinator)
+	if err != nil {
+		l.Error("failed to initialize worker application", "error", err)
+		os.Exit(1)
+	}
 
-	l.Info("outbox worker initialized and listening for events")
-
-	if err := coordinator.ListenAndWait(ctx); err != nil {
-		l.Error("shutdown error", "error", err)
+	if err := app.Run(ctx); err != nil {
+		l.Error("worker application stopped with error", "error", err)
+		os.Exit(1)
 	}
 }

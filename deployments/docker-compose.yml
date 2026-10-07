@@ -1,6 +1,7 @@
-version: '3.8'
-
 services:
+  # ============================================================================
+  # CORE INFRASTRUCTURE
+  # ============================================================================
   postgres:
     image: postgres:16-alpine
     container_name: payment_postgres
@@ -33,9 +34,63 @@ services:
       timeout: 3s
       retries: 5
 
+  # ============================================================================
+  # APPLICATION MICROSERVICES
+  # ============================================================================
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+      args:
+        SERVICE: api-gateway
+    container_name: payment_api_gateway
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: json
+      GATEWAY_HTTP_PORT: 8080
+      DATABASE_URL: postgres://payment_user:payment_pass@postgres:5432/payment_gateway?sslmode=disable
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKERS: redpanda:29092
+      KAFKA_TOPIC_PAYMENT_EVENTS: payment.events.v1
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  outbox-worker:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+      args:
+        SERVICE: outbox-worker
+    container_name: payment_outbox_worker
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: json
+      DATABASE_URL: postgres://payment_user:payment_pass@postgres:5432/payment_gateway?sslmode=disable
+      KAFKA_BROKERS: redpanda:29092
+      KAFKA_TOPIC_PAYMENT_EVENTS: payment.events.v1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================================================
+  # OPTIONAL OBSERVABILITY & EVENT BUS (PROFILES: full)
+  # Run with: docker compose --profile full up -d
+  # ============================================================================
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.1.2
     container_name: payment_redpanda
+    profiles:
+      - full
+      - kafka
     command:
       - redpanda start
       - --smp 1
@@ -55,6 +110,9 @@ services:
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.5.2
     container_name: payment_redpanda_console
+    profiles:
+      - full
+      - kafka
     environment:
       KAFKA_BROKERS: redpanda:29092
     ports:
@@ -65,6 +123,9 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.57
     container_name: payment_jaeger
+    profiles:
+      - full
+      - telemetry
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
@@ -75,6 +136,9 @@ services:
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: payment_prometheus
+    profiles:
+      - full
+      - telemetry
     ports:
       - "9090:9090"
 

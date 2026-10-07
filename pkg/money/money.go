@@ -11,7 +11,7 @@ import (
 var (
 	ErrCurrencyMismatch = errors.New("currency mismatch")
 	ErrNegativeAmount   = errors.New("amount cannot be negative")
-	ErrInvalidCurrency = errors.New("invalid currency code")
+	ErrInvalidCurrency  = errors.New("invalid currency code")
 	ErrOverflow         = errors.New("amount overflow")
 )
 

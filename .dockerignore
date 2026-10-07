@@ -1,0 +1,8 @@
+.git
+bin
+dist
+*.log
+.docker-data
+postgres-data
+redis-data
+kafka-data

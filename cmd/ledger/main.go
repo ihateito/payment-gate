@@ -4,16 +4,19 @@ import (
 	"context"
 	"time"
 
+	"payment-gate/internal/config"
 	"payment-gate/pkg/logger"
 	"payment-gate/pkg/shutdown"
 )
 
 func main() {
+	cfg := config.Load()
+
 	l := logger.New(logger.Config{
-		Level:  "DEBUG",
-		Format: "json",
+		Level:  cfg.LogLevel,
+		Format: cfg.LogFormat,
 	})
-	l.Info("starting ledger microservice (double-entry accounting)")
+	l.Info("starting ledger microservice (double-entry accounting)", "env", cfg.AppEnv)
 
 	coordinator := shutdown.NewCoordinator(10*time.Second, l)
 	ctx, cancel := context.WithCancel(context.Background())

@@ -78,11 +78,16 @@ sequenceDiagram
 
 ```
 payment-gate/
-├── cmd/                          # Точки входа микросервисов
-│   ├── api-gateway/              # Входной HTTP/gRPC шлюз с идемпотентностью
+├── cmd/                          # Минималистичные точки входа микросервисов
+│   ├── api-gateway/              # Входной HTTP шлюз
 │   ├── payment-core/             # Ядро процессинга (оркестрация и state machine)
 │   ├── outbox-worker/            # Фоновый воркер Transactional Outbox
 │   └── ledger/                   # Сервис двойной бухгалтерской записи
+├── internal/                     # Внутренняя бизнес-логика и слои приложений
+│   ├── config/                   # Типизированная конфигурация из .env и окружения
+│   ├── payment/                  # Доменные модели, PostgreSQL репозиторий и HTTP хэндлеры
+│   ├── gateway/                  # Инициализация и жизненный цикл приложения API Gateway
+│   └── worker/                   # Фоновый воркер и диспетчеризация событий Transactional Outbox
 ├── pkg/                          # Базовые переиспользуемые модули (оснастка)
 │   ├── idempotency/              # Distributed lock + cache (Redis/Memory)
 │   ├── outbox/                   # Transactional outbox (SQL, worker, retry)
